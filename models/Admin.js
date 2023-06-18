@@ -4,13 +4,13 @@ const adminSchema = new Schema(
   {
     admin_name: {
       type: String,
-      trim: true,
       required: true,
+      trim: true,
     },
     admin_email: {
       type: String,
       required: true,
-      unique: true,
+      lowercase: true,
     },
     admin_password: {
       type: String,
@@ -18,13 +18,19 @@ const adminSchema = new Schema(
     },
     admin_is_active: {
       type: Boolean,
+      default: false,
     },
     admin_is_creator: {
       type: Boolean,
     },
+    created_date: {
+      type: Date,
+    },
+    updated_date: {
+      type: Date,
+    },
   },
-  {
-    versionKey: false,
-  }
+  { versionKey: false, timestamps: true }
 );
+
 module.exports = model("Admin", adminSchema);

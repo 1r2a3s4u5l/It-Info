@@ -1,5 +1,3 @@
-const config = require("config");
-
 const MyJwt = require("../services/JwtServices");
 
 module.exports = async function (req, res, next) {
@@ -9,7 +7,7 @@ module.exports = async function (req, res, next) {
   try {
     const authorization = req.headers.authorization;
     if (!authorization) {
-      return res.status(403).json({ message: "Avtor ro'yhatdan o'tmagan" });
+      return res.status(403).json({ message: "Admin ro'yhatdan o'tmagan" });
     }
     console.log(authorization);
     const bearer = authorization.split(" ")[0];
@@ -17,7 +15,7 @@ module.exports = async function (req, res, next) {
     if (bearer != "Bearer" || !token) {
       return res
         .status(403)
-        .json({ message: "Avtor ro'yhatdan o'tmagan(token berilmagan)" });
+        .json({ message: "Admin ro'yhatdan o'tmagan(token berilmagan)" });
     }
 
     const [error, resdecodedToken] = await to(MyJwt.verifyAccess(token));
@@ -30,7 +28,7 @@ module.exports = async function (req, res, next) {
     console.log(error);
     return res
       .status(500)
-      .send({ message: "Avtor royhatdan o'tmagan(token noto'g'ri)" });
+      .send({ message: "Admin royhatdan o'tmagan(token noto'g'ri)" });
   }
 };
 

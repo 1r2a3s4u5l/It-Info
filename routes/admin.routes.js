@@ -1,15 +1,23 @@
 const { Router } = require("express");
 const {
   getAdmins,
-  createAdmin,
-  getAdminById,
+  addAdmin,
   loginAdmin,
+  getAdmin,
+  updateAdmin,
+  deleteAdmin,
+  logoutAdmin,
 } = require("../controllers/admin.controller");
 
 const router = Router();
+const adminPolice = require("../middleware/adminPolice");
+
 router.get("/", getAdmins);
-router.post("/", createAdmin);
-router.get("/:id", getAdminById);
+router.post("/", addAdmin);
 router.post("/login", loginAdmin);
+router.post("/logout", logoutAdmin);
+router.get("/:id", getAdmin);
+router.put("/:id", adminPolice, updateAdmin);
+router.delete("/:id", adminPolice, deleteAdmin);
 
 module.exports = router;

@@ -1,96 +1,181 @@
-const errorHandler = require("../helpers/error_handler");
-const bcryp = require("bcrypt");
 const User = require("../models/User");
-const { userValidation } = require("../validations/user.validation");
+const bcrypt = require("bcryptjs");
+const jwt = require("../services/JwtServices");
+const config = require("config");
+const emailValidation = require("../helpers/emailValidation");
+const ApiError = require("../error/ApiError");
 
-const createUser = async (req, res) => {
+const addUser = async (req, res) => {
   try {
-    const { error, value } = userValidation(req.body);
-    if (error) {
-      return res.status(404).send({ message: error.details[0].message });
-    }
+    const {
+      user_name,
+      user_email,
+      user_password,
+      user_info,
+      user_photo
+    } = req.body;
+    const userHashedPassword = bcrypt.hashSync(user_password, 7);
+
+    const data = await User({
+      user_name,
+      user_email,
+      user_password: userHashedPassword,
+      user_info,
+      user_photo,
+      user_activation_link
+    });
+    await data.save();
+    const tokens = jwt.generateTokens(payload)
+    data.user_token = tokens.refreshToken
+    await data.save()
+    res.cookie("refreshToken",tokens.refreshToken,{
+      maxAge:config.get("refresh_ms"),
+      httpOnly:true
+    })
+    res.ok(200,{...tokens,user:payload});
+  } catch (error) {
+    ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Serverda hatolik",
+    });
+  }
+};
+
+const getUsers = async (req, res) => {
+  try {
+    const data = await User.find({});
+    if (!data.length)
+      return res.error(400, { friendlyMsg: "Information not found" });
+    res.send(data);
+  } catch (error) {
+    ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Serverda hatolik",
+    });
+  }
+};
+const getUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const idData = await User.findById(id);
+    if (!idData)
+      return res.error(400, { friendlyMsg: "Information is not found" });
+    res.status(200).send(idData)
+  } catch (error) {
+    ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Serverda hatolik",
+    });
+  }
+};
+
+const updateUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const idData = await User.findById(id);
+    if (!idData)
+      return res.error(400, { friendlyMsg: "Information was not found" });
     const {
       user_name,
       user_email,
       user_password,
       user_info,
       user_photo,
-      created_date,
-      updated_date,
-      user_is_active,
-    } = value;
-    console.log(value);
-    const user = await User.findOne({ user_email });
-    if (user) {
-      return res.status(400).send({ message: "User already exists" });
-    }
-
-    const hashedPassword = await bcryp.hash(user_password, 7);
-    const newUser = new User({
-      user_name,
-      user_email,
-      user_password: hashedPassword,
-      user_info,
-      user_photo,
-      created_date,
-      updated_date,
-      user_is_active,
+      user_reg_date,
+    } = req.body;
+    const userHashedPassword = bcrypt.hashSync(user_password, 7);
+    const data = await User.findByIdAndUpdate(
+      { _id: id },
+      {
+        user_name,
+        user_email,
+        user_password: userHashedPassword,
+        user_info,
+        user_photo,
+        user_reg_date,
+      }
+    );
+    await data.save();
+    res.ok(200, "OK.Info was updated");
+  } catch (error) {
+    ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Serverda hatolik",
     });
-    newUser.save();
-
-    res.status(201).json({ message: "User added successfully" });
-  } catch (error) {
-    errorHandler(res, error);
   }
 };
 
-const loginUser = async (req, res) => {
+const deleteUser = async (req, res) => {
   try {
-    const { user_email, user_password } = req.body;
-    const user = await User.findOne({ user_email });
-    if (!user)
-      return res.status(400).send({ message: "Email yoki parol noto'g'ri" });
-    const validPassword = bcryp.compareSync(user_password, user.user_password);
-    if (!validPassword)
-      return res.status(400).send({ message: "Email yoki parol noto'g'ri" });
-
-    res.status(200).send({ message: "Tizimga hush kelibsiz!" });
-  } catch (error) {
-    errorHandler(res, error);
-  }
-};
-
-const getUsers = async (req, res) => {
-  try {
-    const categories = await User.find({});
-    if (!categories) {
-      return res.status(404).json({ message: "No user found" });
-    }
-    res.status(200).json(categories);
-  } catch (error) {
-    errorHandler(res, error);
-  }
-};
-const getUserById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.status(400).send({
-        message: "Invalid  id",
+    const id = req.params.id;
+    const idData = await User.findById(id);
+    if (!idData)
+      return res.error(400, { friendlyMsg: "Information was not found" });
+    await User.findByIdAndDelete(id);
+    if (req.user.id !== req.params.id){
+      ApiError.unauthorized(res, {
+        friendlyMsg: "User ro'yxatga olinmagan"
       });
     }
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({ message: "No user found" });
-    }
-    res.status(200).json(user);
+    res.ok(200, { friendlyMsg: "Ok. userInfo is deleted" });
+  }
+    catch (error) {
+    ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Serverda hatolik",
+    });
+  }
+} 
+
+const loginUser = async (req, res) => {
+  let user;
+  const { login, user_password } = req.body;
+  if (emailValidation(login)) user = await User.findOne({ user_email: login });
+  else user = await User.findOne({ user_name: login });
+  if (!user) return res.error(400, { friendlyMsg: "Malumotlar notogri" });
+  const validPassword = bcrypt.compareSync(user_password, user.user_password);
+  if (!validPassword)
+    return res.error(400, { friendlyMsg: "Malumotlaringiz notogri" });
+  const payload = {
+    id: user.id,
+  };
+  const tokens = jwt.generateTokens(payload);
+  user.user_token = tokens.refreshToken;
+  await user.save();
+  res.cookie("refreshToken", tokens.refreshToken, {
+    maxAge: config.get("refresh_ms"),
+    httpOnly: true,
+  });
+  res.ok(200, tokens);
+};
+
+const logoutUser = async (req, res) => {
+  try {
+    const { refreshToken } = req.cookies;
+    let user;
+    if (!refreshToken)
+      return res.error(400, { friendlyMsg: "Token is not found" });
+    user = await User.findOneAndUpdate(
+      { user_token: refreshToken },
+      { user_token: "" },
+      { new: true }
+    );
+    if (!user) return res.error(400, { friendlyMsg: "Token topilmadi" });
+    res.clearCookie("refreshToken");
+    res.ok(200, user);
   } catch (error) {
-    errorHandler(res, error);
+    ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Serverda hatolik",
+    });
   }
 };
 module.exports = {
-  createUser,
+  getUser,
   getUsers,
-  getUserById,
+  addUser,
+  updateUser,
+  deleteUser,
   loginUser,
+  logoutUser
 };

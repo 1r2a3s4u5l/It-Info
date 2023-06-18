@@ -4,13 +4,13 @@ const userSchema = new Schema(
   {
     user_name: {
       type: String,
-      trim: true,
       required: true,
+      trim: true,
     },
     user_email: {
       type: String,
       required: true,
-      unique: true,
+      lowercase: true,
     },
     user_password: {
       type: String,
@@ -24,10 +24,17 @@ const userSchema = new Schema(
     },
     user_is_active: {
       type: Boolean,
+      default: false,
+    },
+    user_activation_link: {
+      type: String,
+    },
+    user_token: {
+      type: String,
     },
   },
-  {
-    versionKey: false,
-  }
+
+  { versionKey: false, timestamps: true }
 );
+
 module.exports = model("User", userSchema);

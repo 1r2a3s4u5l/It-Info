@@ -1,97 +1,161 @@
-const errorHandler = require("../helpers/error_handler");
-const bcryp = require("bcrypt");
 const Admin = require("../models/Admin");
-const { adminValidation } = require("../validations/admin.validation");
+const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+const emailValidation = require("../helpers/emailValidation");
+const { errorHandler } = require("../helpers/error_handler");
+const jwt = require("../services/JwtService");
 
-const createAdmin = async (req, res) => {
+const loginAdmin = async (req, res) => {
+  let admin;
+  const { login, admin_password } = req.body;
+  if (emailValidation(login)) admin = await Admin.findOne({ admin_email: login });
+  else admin = await Admin.findOne({ admin_name: login });
+  if (!admin) return res.error(400, { friendlyMsg: "Malumotlar notogri" });
+  const validPassword = bcrypt.compareSync(admin_password, admin.admin_password);
+  if (!validPassword)
+    return res.error(400, { friendlyMsg: "Malumotlaringiz notogri" });
+  const payload = {
+    id: admin.id,
+  };
+  const tokens = jwt.generateTokens(payload);
+  admin.admin_token = tokens.refreshToken;
+  await admin.save();
+  res.cookie("refreshToken", tokens.refreshToken, {
+    maxAge: config.get("refresh_ms"),
+    httpOnly: true,
+  });
+  res.ok(200, tokens);
+};
+
+const addAdmin = async (req, res) => {
   try {
-    const { error, value } = adminValidation(req.body);
-    if (error) {
-      return res.status(404).send({ message: error.details[0].message });
-    }
     const {
       admin_name,
       admin_email,
       admin_password,
       admin_is_active,
       admin_is_creator,
-      created_date,
-      updated_date,
-    } = value;
-    console.log(value);
-    const admin = await Admin.findOne({ admin_email });
-    if (admin) {
-      return res.status(400).send({ message: "Admin already exists" });
-    }
-
-    const hashedPassword = await bcryp.hash(admin_password, 7);
-    const newAdmin = new Admin({
+    } = req.body;
+    const adminHashedPassword = bcrypt.hashSync(admin_password, 7);
+    console.log(adminHashedPassword);
+    const data = await Admin({
       admin_name,
       admin_email,
-      admin_password: hashedPassword,
+      admin_password: adminHashedPassword,
       admin_is_active,
       admin_is_creator,
-      created_date,
-      updated_date,
     });
-    newAdmin.save();
-
-    res.status(201).json({ message: "Admin added successfully" });
+    await data.save();
+    res.json({ message: "Create success", admin: data });
   } catch (error) {
-    errorHandler(res, error);
-  }
-};
-
-const loginAdmin = async (req, res) => {
-  try {
-    const { admin_email, admin_password } = req.body;
-    const admin = await Admin.findOne({ admin_email });
-    if (!admin)
-      return res.status(400).send({ message: "Email yoki parol noto'g'ri" });
-    const validPassword = bcryp.compareSync(
-      admin_password,
-      admin.admin_password
-    );
-    if (!validPassword)
-      return res.status(400).send({ message: "Email yoki parol noto'g'ri" });
-
-    res.status(200).send({ message: "Tizimga hush kelibsiz!" });
-  } catch (error) {
+    console.log(error);
     errorHandler(res, error);
   }
 };
 
 const getAdmins = async (req, res) => {
   try {
-    const categories = await Admin.find({});
-    if (!categories) {
-      return res.status(404).json({ message: "No admin found" });
-    }
-    res.status(200).json(categories);
+    const data = await Admin.find({});
+    if (!data.length)
+      return res.error(400, { message: "Information not found" });
+    res.status(200).send(data);
   } catch (error) {
+    console.log(error);
     errorHandler(res, error);
   }
 };
-const getAdminById = async (req, res) => {
+
+const getAdmin = async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.status(400).send({
-        message: "Invalid  id",
-      });
-    }
-    const admin = await Admin.findById(id);
-    if (!admin) {
-      return res.status(404).json({ message: "No admin found" });
-    }
-    res.status(200).json(admin);
+    const id = req.params.id;
+    let isValid = mongoose.Types.ObjectId.isValid(id);
+    if (!isValid) return res.error(300, "Id is Incorrect");
+    const idData = await Admin.findById(id);
+    if (!idData) return res.error(400, { message: "Information not found" });
+    res.status(200).send(data);
   } catch (error) {
+    console.log(error);
     errorHandler(res, error);
+  }
+};
+
+const updateAdmin = async (req, res) => {
+  try {
+    const id = req.params.id;
+    let isValid = mongoose.Types.ObjectId.isValid(id);
+    if (!isValid) return res.error(300, { message: "Id is Incorrect" });
+    const idData = await Admin.findById(id);
+    if (!idData)
+      return res.error(400, { message: "Information was not found" });
+    const {
+      admin_name,
+      admin_email,
+      admin_password,
+      admin_is_active,
+      admin_is_creator,
+      admin_reg_data,
+    } = req.body;
+    const adminHashedPassword = bcrypt.hashSync(admin_password, 7);
+    await Admin.findByIdAndUpdate(
+      { _id: id },
+      {
+        admin_name,
+        admin_email,
+        admin_password: adminHashedPassword,
+        admin_is_active,
+        admin_is_creator,
+        admin_reg_data,
+      }
+    );
+    res.ok(200, "OK.Info was updated");
+  } catch (error) {
+    console.log(error);
+    errorHandler(res, error);
+  }
+};
+
+const deleteAdmin = async (req, res) => {
+  try {
+    const id = req.params.id;
+    let isValid = mongoose.Types.ObjectId.isValid(id);
+    if (!isValid) return res.error(300, { message: "Id is Incorrect" });
+    const idData = await Admin.findById(id);
+    if (!idData)
+      return res.error(400, { message: "Information was not found" });
+    await Admin.findByIdAndDelete(id);
+    res.ok(200, "Ok. AdminInfo is deleted");
+  } catch (error) {
+    console.log(error);
+    errorHandler(res, error);
+  }
+};
+const logoutAdmin = async (req, res) => {
+  try {
+    const { refreshToken } = req.cookies;
+    let admin;
+    if (!refreshToken)
+      return res.error(400, { friendlyMsg: "Token is not found" });
+    admin = await Admin.findOneAndUpdate(
+      { admin_token: refreshToken },
+      { admin_token: "" },
+      { new: true }
+    );
+    if (!admin) return res.error(400, { friendlyMsg: "Token topilmadi" });
+    res.clearCookie("refreshToken");
+    res.ok(200, admin);
+  } catch (error) {
+    ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Serverda hatolik",
+    });
   }
 };
 module.exports = {
-  createAdmin,
+  getAdmin,
   getAdmins,
-  getAdminById,
+  addAdmin,
+  updateAdmin,
+  deleteAdmin,
   loginAdmin,
+  logoutAdmin
 };
