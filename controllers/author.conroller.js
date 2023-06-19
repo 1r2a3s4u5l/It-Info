@@ -142,10 +142,38 @@ const getAuthorById = async (req, res) => {
     errorHandler(res, error);
   }
 };
+const refreshAuthorToken = async (req, res) => {
+  const { refreshToken } = req.cookies;
+  if (!refreshToken)
+    return res.status(400).send({ message: "Token topilmadi" });
+  const authorDataFromCookies = await myJwt.verifyRefresh(refreshToken);
+
+  const authorDataFromDB = await Author.findOne({ author_token: refreshToken });
+  if (!authorDataFromCookies || !authorDataFromDB) {
+    return res.status(400).send({ message: "Author ro'yhatdan o'tmagan" });
+  }
+  const author = await Author.findById(authorDataFromCookies.id);
+  if (!author) return res.status(400).send({ message: "Id noto'g'ri" });
+
+  const payload = {
+    id: author._id,
+    is_expert: author.is_expert,
+    authorRoles: ["READ", "WRITE"],
+  };
+  const tokens = myJwt.generateTokens(payload);
+  author.author_token = tokens.refreshToken;
+  await author.save();
+  res.cookie("refreshToken", tokens.refreshToken, {
+    maxAge: config.get("refresh_ms"),
+    httpOnly: true,
+  });
+  res.status(200).send({ ...tokens });
+};
 module.exports = {
   createAuthor,
   getAuthors,
   getAuthorById,
   loginAuthor,
-  logoutAuthor
+  logoutAuthor,
+  refreshAuthorToken
 };

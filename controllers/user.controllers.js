@@ -1,5 +1,5 @@
 const User = require("../models/User");
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 const jwt = require("../services/JwtServices");
 const config = require("config");
 const emailValidation = require("../helpers/emailValidation");
@@ -7,13 +7,8 @@ const ApiError = require("../error/ApiError");
 
 const addUser = async (req, res) => {
   try {
-    const {
-      user_name,
-      user_email,
-      user_password,
-      user_info,
-      user_photo
-    } = req.body;
+    const { user_name, user_email, user_password, user_info, user_photo } =
+      req.body;
     const userHashedPassword = bcrypt.hashSync(user_password, 7);
 
     const data = await User({
@@ -22,17 +17,17 @@ const addUser = async (req, res) => {
       user_password: userHashedPassword,
       user_info,
       user_photo,
-      user_activation_link
+      user_activation_link,
     });
     await data.save();
-    const tokens = jwt.generateTokens(payload)
-    data.user_token = tokens.refreshToken
-    await data.save()
-    res.cookie("refreshToken",tokens.refreshToken,{
-      maxAge:config.get("refresh_ms"),
-      httpOnly:true
-    })
-    res.ok(200,{...tokens,user:payload});
+    const tokens = jwt.generateTokens(payload);
+    data.user_token = tokens.refreshToken;
+    await data.save();
+    res.cookie("refreshToken", tokens.refreshToken, {
+      maxAge: config.get("refresh_ms"),
+      httpOnly: true,
+    });
+    res.ok(200, { ...tokens, user: payload });
   } catch (error) {
     ApiError.internal(res, {
       message: error,
@@ -60,7 +55,7 @@ const getUser = async (req, res) => {
     const idData = await User.findById(id);
     if (!idData)
       return res.error(400, { friendlyMsg: "Information is not found" });
-    res.status(200).send(idData)
+    res.status(200).send(idData);
   } catch (error) {
     ApiError.internal(res, {
       message: error,
@@ -112,20 +107,19 @@ const deleteUser = async (req, res) => {
     if (!idData)
       return res.error(400, { friendlyMsg: "Information was not found" });
     await User.findByIdAndDelete(id);
-    if (req.user.id !== req.params.id){
+    if (req.user.id !== req.params.id) {
       ApiError.unauthorized(res, {
-        friendlyMsg: "User ro'yxatga olinmagan"
+        friendlyMsg: "User ro'yxatga olinmagan",
       });
     }
     res.ok(200, { friendlyMsg: "Ok. userInfo is deleted" });
-  }
-    catch (error) {
+  } catch (error) {
     ApiError.internal(res, {
       message: error,
       friendlyMsg: "Serverda hatolik",
     });
   }
-} 
+};
 
 const loginUser = async (req, res) => {
   let user;
@@ -177,5 +171,5 @@ module.exports = {
   updateUser,
   deleteUser,
   loginUser,
-  logoutUser
+  logoutUser,
 };

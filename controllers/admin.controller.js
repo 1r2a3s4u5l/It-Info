@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const emailValidation = require("../helpers/emailValidation");
 const { errorHandler } = require("../helpers/error_handler");
-const jwt = require("../services/JwtService");
+const jwt = require("../services/JwtServices");
 
 const loginAdmin = async (req, res) => {
   let admin;
