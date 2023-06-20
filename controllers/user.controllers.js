@@ -1,42 +1,49 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
-const jwt = require("../services/JwtServices");
+const myJwt = require("../services/JwtServices");
 const config = require("config");
 const emailValidation = require("../helpers/emailValidation");
 const ApiError = require("../error/ApiError");
+
+const uuid = require("uuid");
+const mailService = require("../services/Mail.service");
 
 const addUser = async (req, res) => {
   try {
     const { user_name, user_email, user_password, user_info, user_photo } =
       req.body;
     const userHashedPassword = bcrypt.hashSync(user_password, 7);
+    const user_activation_link = uuid.v4();
     const userFound = await User.findOne({ user_email });
-    if (!userFound) {
-      return res.error(400, { friendlyMsg: "email is not found" });
+    if (userFound) {
+      return res.status(400).send({ friendlyMsg: "user exists" });
     }
-    const data = User({
+    const newUser = User({
       user_name,
       user_email,
       user_password: userHashedPassword,
       user_info,
       user_photo,
+      user_activation_link
     });
-    // console.log(data);
+    await mailService.sendActivationMail(
+      user_email,
+      `${config.get("api_url")}/api/user/activate/${user_activation_link}`
+    );
     const payload = {
-      id: data._id,
-      email: data.user_email,
+      id: newUser._id,
       userRoles: ["READ", "WRITE"],
+      user_is_active: newUser.user_is_active,
     };
-    const tokens = jwt.generateTokens(payload);
-    data.user_token = tokens.refreshToken;
-    // console.log(1);
-    await data.save();
+    const tokens = myJwt.generateTokens(payload);
+    newUser.user_token = tokens.refreshToken;
+    await newUser.save();
+
     res.cookie("refreshToken", tokens.refreshToken, {
       maxAge: config.get("refresh_ms"),
       httpOnly: true,
     });
-    // res.ok(200, { ...tokens, user: payload });
-    res.status(200).send({ ...tokens });
+    res.status(200).json({ ...tokens, user: payload });
   } catch (error) {
     console.log(error);
   }
@@ -114,7 +121,7 @@ const deleteUser = async (req, res) => {
       return res.error(400, { friendlyMsg: "Information was not found" });
     await User.findByIdAndDelete(id);
     if (req.user.id !== req.params.id) {
-      ApiError.unauthorized(res, {
+      ApiError.unuserized(res, {
         friendlyMsg: "User ro'yxatga olinmagan",
       });
     }
@@ -139,7 +146,7 @@ const loginUser = async (req, res) => {
   const payload = {
     id: user.id,
   };
-  const tokens = jwt.generateTokens(payload);
+  const tokens = myJwt.generateTokens(payload);
   user.user_token = tokens.refreshToken;
   await user.save();
   res.cookie("refreshToken", tokens.refreshToken, {
@@ -170,6 +177,27 @@ const logoutUser = async (req, res) => {
     });
   }
 };
+const userActivate = async (req, res) => {
+  try {
+    const user = await User.findOne({
+      user_activation_link: req.params.link,
+    });
+    if (!user) {
+      return res.status(400).send({ message: "Bunday user topilmadi" });
+    }
+    if (user.user_is_active) {
+      return res.status(400).send({ message: "User already activated" });
+    }
+    user.user_is_active = true;
+    await user.save();
+    res.status(200).send({
+      user_is_active: user.user_is_active,
+      message: "user actived",
+    });
+  } catch (error) {
+    errorHandler(res, error);
+  }
+};
 module.exports = {
   getUser,
   getUsers,
@@ -178,4 +206,5 @@ module.exports = {
   deleteUser,
   loginUser,
   logoutUser,
+  userActivate,
 };

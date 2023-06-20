@@ -22,10 +22,14 @@ const userSchema = new Schema(
       default: "../avatar.jpg",
     },
 
-    user_is_active: {
-      type: Boolean,
+    user_token: String,
+    user_activation_link:{
+      type:String,
     },
-    user_token: String
+    user_is_active:{
+      type:Boolean,
+      default:false
+    }
   },
   {
     versionKey: false,
