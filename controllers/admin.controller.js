@@ -8,10 +8,14 @@ const jwt = require("../services/JwtServices");
 const loginAdmin = async (req, res) => {
   let admin;
   const { login, admin_password } = req.body;
-  if (emailValidation(login)) admin = await Admin.findOne({ admin_email: login });
+  if (emailValidation(login))
+    admin = await Admin.findOne({ admin_email: login });
   else admin = await Admin.findOne({ admin_name: login });
   if (!admin) return res.error(400, { friendlyMsg: "Malumotlar notogri" });
-  const validPassword = bcrypt.compareSync(admin_password, admin.admin_password);
+  const validPassword = bcrypt.compareSync(
+    admin_password,
+    admin.admin_password
+  );
   if (!validPassword)
     return res.error(400, { friendlyMsg: "Malumotlaringiz notogri" });
   const payload = {
@@ -157,5 +161,5 @@ module.exports = {
   updateAdmin,
   deleteAdmin,
   loginAdmin,
-  logoutAdmin
+  logoutAdmin,
 };

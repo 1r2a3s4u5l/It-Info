@@ -9,32 +9,28 @@ const userSchema = new Schema(
     },
     user_email: {
       type: String,
-      required: true,
-      lowercase: true,
+      unique: true,
     },
     user_password: {
       type: String,
-      required: true,
     },
     user_info: {
       type: String,
     },
     user_photo: {
       type: String,
+      default: "../avatar.jpg",
     },
+
     user_is_active: {
       type: Boolean,
-      default: false,
     },
-    user_activation_link: {
-      type: String,
-    },
-    user_token: {
-      type: String,
-    },
+    user_token: String
   },
-
-  { versionKey: false, timestamps: true }
+  {
+    versionKey: false,
+    timestamps: true,
+  }
 );
 
 module.exports = model("User", userSchema);

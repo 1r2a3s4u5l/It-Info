@@ -10,29 +10,35 @@ const addUser = async (req, res) => {
     const { user_name, user_email, user_password, user_info, user_photo } =
       req.body;
     const userHashedPassword = bcrypt.hashSync(user_password, 7);
-
-    const data = await User({
+    const userFound = await User.findOne({ user_email });
+    if (!userFound) {
+      return res.error(400, { friendlyMsg: "email is not found" });
+    }
+    const data = User({
       user_name,
       user_email,
       user_password: userHashedPassword,
       user_info,
       user_photo,
-      user_activation_link,
     });
-    await data.save();
+    // console.log(data);
+    const payload = {
+      id: data._id,
+      email: data.user_email,
+      userRoles: ["READ", "WRITE"],
+    };
     const tokens = jwt.generateTokens(payload);
     data.user_token = tokens.refreshToken;
+    // console.log(1);
     await data.save();
     res.cookie("refreshToken", tokens.refreshToken, {
       maxAge: config.get("refresh_ms"),
       httpOnly: true,
     });
-    res.ok(200, { ...tokens, user: payload });
+    // res.ok(200, { ...tokens, user: payload });
+    res.status(200).send({ ...tokens });
   } catch (error) {
-    ApiError.internal(res, {
-      message: error,
-      friendlyMsg: "Serverda hatolik",
-    });
+    console.log(error);
   }
 };
 

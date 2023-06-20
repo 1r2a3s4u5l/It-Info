@@ -1,5 +1,13 @@
 const { Router } = require("express");
+const express = require("express");
 const router = Router();
+
+express.Router.prefix = function (path, subRouter) {
+  const router = express.Router();
+  this.use(path, router);
+  subRouter(router);
+  return router;
+};
 
 const dictRouter = require("./dictionary.routes");
 const categoryRouter = require("./category.routes");

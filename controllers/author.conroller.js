@@ -17,10 +17,10 @@ const myJwt = require("../services/JwtServices");
 
 const createAuthor = async (req, res) => {
   try {
-    const { error, value } = authorValidation(req.body);
-    if (error) {
-      return res.status(404).send({ message: error.details[0].message });
-    }
+    // const { error, value } = authorValidation(req.body);
+    // if (error) {
+    //   return res.status(404).send({ message: error.details[0].message });
+    // }
     const {
       author_first_name,
       author_last_name,
@@ -32,7 +32,7 @@ const createAuthor = async (req, res) => {
       author_position,
       author_photo,
       is_expert,
-    } = value;
+    } = req.body;
     const author = await Author.findOne({ author_email });
     if (author) {
       return res.status(400).send({ message: "Author already exists" });
@@ -175,5 +175,5 @@ module.exports = {
   getAuthorById,
   loginAuthor,
   logoutAuthor,
-  refreshAuthorToken
+  refreshAuthorToken,
 };
