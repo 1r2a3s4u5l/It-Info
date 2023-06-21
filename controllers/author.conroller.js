@@ -3,7 +3,7 @@ const Author = require("../models/Author");
 const { authorValidation } = require("../validations/author.validation");
 const bcryp = require("bcrypt");
 const config = require("config");
-const { default: mongoose } = require("mongoose");
+const { default: mongoose, set } = require("mongoose");
 const myJwt = require("../services/JwtServices");
 
 const uuid = require("uuid");
@@ -86,6 +86,20 @@ const loginAuthor = async (req, res) => {
     if (!validPassword)
       return res.status(400).send({ message: "Email yoki parol noto'g'ri" });
 
+    // // uncoughtException
+
+    // try {
+    //   setTimeout(() => {
+    //     var err = new Error("Hello");
+    //     throw err;
+    //   }, 1000);
+    // } catch (err) {
+    //   console.log(err);
+    // }
+
+    // // unhandledRejection
+    // new Promise((_,reject)=> reject(new Error("woops1")))
+
     const payload = {
       id: author._id,
       is_expert: author.is_expert,
@@ -141,7 +155,11 @@ const getAuthors = async (req, res) => {
 };
 const getAuthorById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id;
+    if (id !== req.author.id) {
+      return res.status(401).send({ message: "Sizda bunday huquq yoq" });
+    }
+    // const { id } = req.params;
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.status(400).send({
         message: "Invalid  id",
@@ -204,6 +222,42 @@ const authorActivate = async (req, res) => {
     errorHandler(res, error);
   }
 };
+const deleteAuthor = async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (id !== req.author.id) {
+      return res.status(401).send({ message: "Sizda bunday huquq yoq" });
+    }
+
+    const result = await Author.findOne({ _id: id });
+
+    if (result == null) {
+      return res.status(400).send({ message: "Id is incorrect" });
+    }
+    await Author.findByIdAndDelete(id);
+    res.status(200).send({ message: "OK. Author is deleted" });
+  } catch (error) {
+    errorHandler(res, error);
+  }
+};
+const updateAuthor = async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (id !== req.author.id) {
+      return res.status(401).send({ message: "Sizda bunday huquq yoq" });
+    }
+
+    const result = await Author.findOne({ _id: id });
+
+    if (result == null) {
+      return res.status(400).send({ message: "Id is incorrect" });
+    }
+    await Author.findByIdAndUpdate(id);
+    res.status(200).send({ message: "OK. Author is deleted" });
+  } catch (error) {
+    errorHandler(res, error);
+  }
+};
 module.exports = {
   createAuthor,
   getAuthors,
@@ -212,4 +266,6 @@ module.exports = {
   logoutAuthor,
   refreshAuthorToken,
   authorActivate,
+  deleteAuthor,
+  updateAuthor,
 };

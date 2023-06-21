@@ -20,11 +20,11 @@ module.exports = async function (req, res, next) {
         .json({ message: "Avtor ro'yhatdan o'tmagan(token berilmagan)" });
     }
 
-    const [error, resdecodedToken] = await to(MyJwt.verifyAccess(token));
+    const [error, decodedToken] = await to(MyJwt.verifyAccess(token));
     if (error) {
       return res.status(403).json({ message: error.message });
     }
-
+    req.author = decodedToken;
     next();
   } catch (error) {
     console.log(error);
