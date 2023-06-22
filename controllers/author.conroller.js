@@ -88,17 +88,17 @@ const loginAuthor = async (req, res) => {
 
     // uncoughtException
 
-    try {
-      setTimeout(() => {
-        var err = new Error("Hello");
-        throw err;
-      }, 1000);
-    } catch (err) {
-      console.log(err);
-    }
+    // try {
+    //   setTimeout(() => {
+    //     var err = new Error("Hello");
+    //     throw err;
+    //   }, 1000);
+    // } catch (err) {
+    //   console.log(err);
+    // }
 
-    // unhandledRejection
-    new Promise((_, reject) => reject(new Error("woops1")));
+    // // unhandledRejection
+    // new Promise((_, reject) => reject(new Error("woops1")));
 
     const payload = {
       id: author._id,
