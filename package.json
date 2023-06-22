@@ -14,14 +14,15 @@
     "mongoose": "^7.3.0",
     "nodemailer": "^6.9.3",
     "uuid": "^9.0.0",
-    "winston": "^3.9.0"
+    "winston": "^3.9.0",
+    "winston-mongodb": "^5.1.1"
   },
   "name": "itinfo",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development nodemon app.js",
-    "prod": "cross-env prod_secret=123456 prod_accesss_key=qwerty NODE_ENV=production nodemon app.js"
+    "dev": "cross-env level=info NODE_ENV=development nodemon app.js",
+    "prod": "cross-env level=error NODE_ENV=production nodemon app.js"
   },
   "author": "",
   "license": "ISC",

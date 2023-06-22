@@ -7,7 +7,7 @@ const logger = require("./services/logger");
 
 require("dotenv").config({ path: `.env.${process.env.NODE_ENV}` });
 
-// console.log(process.env.NODE_ENV);
+console.log(process.env.NODE_ENV);
 // console.log(process.env.secret);
 // console.log(config.get("secret"));
 // console.log(config.get("access_key"));
@@ -27,13 +27,13 @@ logger.info("INFO ma'lumotlar");
 
 const PORT = config.get("port") || 3030;
 
-process.on("uncaughtException", (ex) => {
-  console.log("uncaughtException", ex.message);
-  // process.exit(1)
-});
-process.on("unhandledRejection", (rej) => {
-  console.log("unhandledRejection", rej);
-});
+// process.on("uncaughtException", (ex) => {
+//   console.log("uncaughtException", ex.message);
+//   // process.exit(1)
+// });
+// process.on("unhandledRejection", (rej) => {
+//   console.log("unhandledRejection", rej);
+// });
 const mainRouter = require("./routes/index.routes");
 const errorHandler = require("./middleware/error_handing_middleware");
 
