@@ -30,5 +30,11 @@ router.get("/authors", (req, res) => {
     isAuthor: true,
   });
 });
+router.get("/login", (req, res) => {
+  res.render(createViewPath("login"), {
+    title: "Login",
+    isLogin: true,
+  });
+});
 
 module.exports = router;
