@@ -9,8 +9,9 @@ const {
 // const expressWinston = require("express-winston");
 // const workerWinston = require('./middleware/loggermiddleware');
 const logger = require("./services/logger");
+const exHbs = require('express-handlebars');
 
-require("dotenv").config({ path: `.env.${process.env.NODE_ENV}` });
+// require("dotenv").config({ path: `.env.${process.env.NODE_ENV}` });
 
 // console.log(process.env.NODE_ENV);
 // console.log(process.env.secret);
@@ -79,11 +80,23 @@ app.use(cookieParser()); //frontend dan kelatotgan so'rovlar ichidagi cookie ni 
 //     })
 //     );
 
+// ---------------------------------
+const hbs = exHbs.create({
+  defaultLayout:"main",
+  extname:"hbs"
+})
 
-app.use(expressWinstonLogger);
-console.log(1);
+app.engine("hbs",hbs.engine)
+
+app.set("View engine",'hbs')
+app.set("views","views")
+app.use(express.static("views"))
+// ---------------------------
+
+// app.use(expressWinstonLogger);
+// console.log(1);
 app.use(mainRouter);
-app.use(expressWinstonErrorLogger);
+// app.use(expressWinstonErrorLogger);
 
 app.use(errorHandler);
 

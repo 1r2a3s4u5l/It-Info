@@ -148,7 +148,7 @@ const getAuthors = async (req, res) => {
     if (!categories) {
       return res.status(404).json({ message: "No author found" });
     }
-    res.status(200).json(categories);
+    res.status(200).json({data:categories});
   } catch (error) {
     errorHandler(res, error);
   }
