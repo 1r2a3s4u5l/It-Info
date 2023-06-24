@@ -33,6 +33,18 @@
 
 
 <script>
+
+  const authorPassword = document.getElementById("author_password");
+  const checkBox = document.getElementById("exampleCheck1");
+
+  checkBox.addEventListener("change", (e) => {
+    e.preventDefault();
+    if (authorPassword.type === "password") {
+      authorPassword.type = "text";
+    } else {
+      authorPassword.type = "password";
+    }
+  })
     const form = document.getElementById("loginForm")
 
     form.addEventListener('submit',async (e)=>{
